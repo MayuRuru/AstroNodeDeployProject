@@ -6,8 +6,13 @@ const app = new Hono();
 export default app;
 
 // Create our endpoints:
-app.get("/leaderboard", (ctx) => {
-  return ctx.json(leaderboard);
+app.get("/", (ctx) => {
+  return ctx.json([
+    {
+      endpoint: "/leaderboard",
+      description: "Returns board information",
+    },
+  ]);
 });
 
 /* export default {
