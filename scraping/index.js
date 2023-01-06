@@ -1,6 +1,9 @@
 import * as cheerio from "cheerio";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
+
+import TEAMS from "../db/teams.json";
+
 /* const res = await fetch(URLS.board);
 const html = await res.text(); */
 
@@ -33,6 +36,9 @@ async function getBoardData() {
     redCards: { selector: ".fs-table-text_9", typeOf: "number" },
   };
 
+  const getTeamIdFrom = ({ name }) =>
+    TEAMS.find((team) => team.name === name).id;
+
   const cleanText = (text) =>
     text
       .replace(/\t|\n|\s:/g, "")
@@ -57,6 +63,9 @@ async function getBoardData() {
         return [key, value];
       }
     );
+
+    const leaderboardForTeam = Object.fromEntries(boardEntries);
+    leaderboardForTeam.teamId = getTeamIdFrom(leaderboardForTeam);
 
     // console.log(Object.fromEntries(boardEntries));
     leaderboard.push(Object.fromEntries(boardEntries));
