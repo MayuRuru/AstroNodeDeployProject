@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
-
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
 /* const res = await fetch(URLS.board);
 const html = await res.text(); */
 
@@ -22,35 +23,57 @@ async function getBoardData() {
   const $rows = $("table tbody tr");
 
   const BOARD_SELECTORS = {
-    team: ".fs-table-text_3",
-    wins: ".fs-table-text_4",
-    loses: ".fs-table-text_5",
-    scoredGoals: ".fs-table-text_6",
-    concededGoals: ".fs-table-text_7",
-    yellowCards: ".fs-table-text_8",
-    redCards: ".fs-table-text_9",
+    // convert in object to make it scalable
+    team: { selector: ".fs-table-text_3", typeOf: "string" },
+    wins: { selector: ".fs-table-text_4", typeOf: "number" },
+    loses: { selector: ".fs-table-text_5", typeOf: "number" },
+    scoredGoals: { selector: ".fs-table-text_6", typeOf: "number" },
+    concededGoals: { selector: ".fs-table-text_7", typeOf: "number" },
+    yellowCards: { selector: ".fs-table-text_8", typeOf: "number" },
+    redCards: { selector: ".fs-table-text_9", typeOf: "number" },
   };
 
   const cleanText = (text) =>
-    text.replace(/\t|\n|\s:/g, "").replace(/.*:/g, "");
+    text
+      .replace(/\t|\n|\s:/g, "")
+      .replace(/.*:/g, " ")
+      .trim();
 
   // Make entries from BOARD object so we can map with key-value
   // It will return an array of arrays key-value
 
   const boardSelectorEntries = Object.entries(BOARD_SELECTORS);
 
+  const leaderboard = [];
+
   $rows.each((index, el) => {
-    const boardEntries = boardSelectorEntries.map(([key, selector]) => {
-      const rawValue = $(el).find(selector).text();
-      const value = cleanText(rawValue);
-      return [key, value];
-    });
-    Object.fromEntries(boardEntries);
+    const boardEntries = boardSelectorEntries.map(
+      ([key, { selector, typeOf }]) => {
+        const rawValue = $(el).find(selector).text();
+        const cleanedValue = cleanText(rawValue);
+
+        const value = typeOf === "number" ? Number(cleanedValue) : cleanedValue;
+
+        return [key, value];
+      }
+    );
+
+    // console.log(Object.fromEntries(boardEntries));
+    leaderboard.push(Object.fromEntries(boardEntries));
   });
+
+  return leaderboard;
 }
 
-await getBoardData();
+const leaderboard = await getBoardData();
 
+// cwd from NODE indicates from where the script is executed - it has to be always the same:
+const filePath = path.join(process.cwd(), "db", "leaderboard.json");
+
+// this way we write the json file:
+await writeFile(filePath, JSON.stringify(leaderboard, null, 2), "utf-8");
+
+// console.log(filePath);
 // console.log($(el).text())
 // const $el = $(el)
 
